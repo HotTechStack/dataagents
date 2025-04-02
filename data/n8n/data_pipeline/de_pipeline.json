@@ -1,0 +1,991 @@
+{
+  "name": "de pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "63e49813-43b1-43c9-9234-c7a74aafcea6",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "position": [
+        -660,
+        200
+      ],
+      "typeVersion": 1.1,
+      "webhookId": "1fc7a5b2-b1b4-4f5d-a2a4-244329659bb6"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "o3-mini",
+          "mode": "list",
+          "cachedResultName": "o3-mini"
+        },
+        "options": {}
+      },
+      "id": "207537e1-4086-47da-975c-35379aa58135",
+      "name": "LLM Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        160,
+        760
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "J3VsZCs00ThQuWaN",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a data engineering assistant that helps users create end-to-end data pipelines. Your role is to understand the user's request and transform it into actionable steps including code generation, data transformation, and dashboard creation.\n\nThe infrastructure includes:\n1. Python environment with Polars and Pandas for data processing\n2. DuckDB for storage and querying\n3. Metabase for visualization and dashboards\n4. A simple cron-based scheduler for recurring tasks\n\nFor each request, analyze what the user is asking for and generate the appropriate response, which might include:\n- Python code to implement a data pipeline\n- SQL queries for DuckDB\n- Dashboard configurations for Metabase\n\nBe creative but practical, focusing on solutions that can be implemented with the available technology stack."
+        }
+      },
+      "id": "03033ceb-8f64-43f1-9415-1da9f7379d1a",
+      "name": "Analyze Request",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -440,
+        200
+      ],
+      "typeVersion": 1.8
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.output }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Based on the user's request, generate Python code that implements the required data pipeline. Use Polars (preferred) or Pandas for data processing, and DuckDB for storage. Include the following components:\n\n1. Data ingestion from the source specified or implied in the request\n2. Data transformation using Polars/Pandas\n3. Storage of processed data in DuckDB\n4. Setup for visualization in Metabase\n\nThe code should be well-structured, properly commented, include error handling, and follow best practices. Return the code wrapped in ```python and ``` markers."
+            }
+          ]
+        }
+      },
+      "id": "260f2465-55b1-488f-9dfa-6556dd9a851c",
+      "name": "Handle Code Generation",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        1060,
+        760
+      ],
+      "typeVersion": 1.5
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Extract Python Code').item.json.code }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Based on the Python code that was generated for the data pipeline, create the necessary SQL queries for DuckDB. Include:\n\n1. CREATE TABLE statements for any tables that need to be created\n2. SELECT queries that would be useful for analyzing the data\n3. Any views that should be created for use in Metabase\n\nMake sure the queries are compatible with DuckDB syntax and relate correctly to the data model implemented in the Python code. Return the SQL queries wrapped in ```sql and ``` markers."
+            }
+          ]
+        }
+      },
+      "id": "fb6c2ef5-47d9-4531-bab8-1cb08ba34555",
+      "name": "Generate SQL",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        1568,
+        300
+      ],
+      "typeVersion": 1.5
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Python Code:\n```python\n{{ $('Extract Python Code').item.json.code }}\n```\n\nSQL Queries:\n```sql\n{{ $('Extract SQL Queries').item.json.sql }}\n```",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Based on the Python code and SQL queries for the data pipeline, create a JSON configuration for a Metabase dashboard. The configuration should include:\n\n1. Dashboard name and description\n2. A list of cards (visualizations) to include on the dashboard\n3. For each card, specify the chart type, dimensions, metrics, and SQL query to use\n\nThe configuration should follow this format:\n```json\n{\n  \"name\": \"Dashboard Name\",\n  \"description\": \"Dashboard description\",\n  \"cards\": [\n    {\n      \"name\": \"Chart Title\",\n      \"type\": \"bar|line|pie|scatter|table|etc\",\n      \"query\": \"SQL query for this chart\",\n      \"dimensions\": [\"dimension_field1\", \"dimension_field2\"],\n      \"metrics\": [\"metric_field1\", \"metric_field2\"],\n      \"description\": \"Chart description\"\n    }\n  ]\n}\n```\n\nMake sure the SQL queries reference the tables/views created by the pipeline. Return the configuration wrapped in ```json and ``` markers."
+            }
+          ]
+        }
+      },
+      "id": "46160d6f-ff1a-4986-b51f-71e7ea6b9383",
+      "name": "Generate Dashboard Config",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        2320,
+        400
+      ],
+      "typeVersion": 1.5
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Extract Python Code').item.json.code }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Based on the Python code for the data pipeline, generate a cron job configuration to run this pipeline regularly. Include:\n\n1. A suggested schedule (e.g., hourly, daily, weekly)\n2. The command to execute the Python script\n3. Any environment setup that might be needed\n4. Options for logging the execution output\n\nReturn the configuration in a shell script format wrapped in ```bash and ``` markers."
+            }
+          ]
+        }
+      },
+      "id": "b05593ce-5cba-46c4-871f-6df570cda8fe",
+      "name": "Generate Cron Job",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        2916,
+        500
+      ],
+      "typeVersion": 1.5
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.output }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Analyze the user's request and determine what type of data engineering task they are asking for. Respond with a JSON object in the following format:\n\n```json\n{\n  \"requestType\": \"PIPELINE_CREATION | DATA_ANALYSIS | DASHBOARD_CREATION | SCHEDULED_TASK | OTHER\",\n  \"dataSource\": \"CSV | API | DATABASE | NONE\",\n  \"transformationNeeded\": true|false,\n  \"visualizationNeeded\": true|false,\n  \"schedulingNeeded\": true|false,\n  \"complexity\": \"LOW | MEDIUM | HIGH\"\n}\n```\n\nBe specific in your assessment based on the details in the user's request."
+            }
+          ]
+        }
+      },
+      "id": "4cb6900b-cc8d-43aa-a3dd-c72eb1b34454",
+      "name": "Determine Request Type",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        -60,
+        80
+      ],
+      "typeVersion": 1.5
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "6e2e15f8-ee82-40c3-93b2-b5eb7d5a7fdd",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "leftValue": "={{ $json.output.requestType }}",
+                    "rightValue": "PIPELINE_CREATION"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pipeline"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "82da41c3-fe7b-4265-9b8c-b8dcfeb02f20",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "leftValue": "={{ $json.output.requestType }}",
+                    "rightValue": "DATA_ANALYSIS"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "analysis"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c4c82e9a-1cee-4ad3-a4ea-a217553c0c01",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "leftValue": "={{ $json.output.requestType }}",
+                    "rightValue": "DASHBOARD_CREATION"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "dashboard"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b7d08d80-58e3-4f5d-8f1f-afa4c5fc0f4b",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "leftValue": "={{ $json.output.requestType }}",
+                    "rightValue": "SCHEDULED_TASK"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "scheduling"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d8a08fa5-76cf-4df0-9465-94e4fd7f0d0d",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "leftValue": "={{ $json.output.requestType }}",
+                    "rightValue": "OTHER"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "other"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8575b11d-88fb-4215-9c65-dabc53cb3ca7",
+      "name": "Route Request",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        760,
+        160
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0eee10a3-e879-4554-9fd2-f7d2b33ffad7",
+              "name": "code",
+              "type": "string",
+              "value": "={{ $json.text.match(/```python([\\s\\S]*?)```/)[1].trim() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "76f4dafc-9a96-4e5e-92b2-fea7fac53852",
+      "name": "Extract Python Code",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1340,
+        200
+      ],
+      "typeVersion": 3.3
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "59be2075-ddb9-42b5-bd16-ea7b75e2cb1e",
+              "name": "sql",
+              "type": "string",
+              "value": "={{ $json.text.match(/```sql([\\s\\S]*?)```/)[1].trim() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "47ee41ba-0479-40ee-a876-fd08b12ee91b",
+      "name": "Extract SQL Queries",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2022,
+        300
+      ],
+      "typeVersion": 3.3
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cbfe01fb-17fe-4d2c-bf33-fe92d51293d1",
+              "name": "dashboardConfig",
+              "type": "json",
+              "value": "={{ $json.text.match(/```json([\\s\\S]*?)```/)[1].trim() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "578812d7-1a55-4852-85eb-093ff25a860e",
+      "name": "Extract Dashboard Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2696,
+        400
+      ],
+      "typeVersion": 3.3
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5fa1de64-0ca4-4a4c-88ce-ae5c53e0f6fa",
+              "name": "cronScript",
+              "type": "string",
+              "value": "={{ $json.text.match(/```bash([\\s\\S]*?)```/)[1].trim() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f7c21601-c530-4540-a4a7-9df7b9eeac13",
+      "name": "Extract Cron Script",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3292,
+        500
+      ],
+      "typeVersion": 3.3
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://execution-container:8000/execute",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"pipelineId\": \"{{ $now.format('YYYYMMDDHHmmss') }}\",\n  \"code\": {{ $json.code | json }},\n  \"options\": {\n    \"saveToFile\": true,\n    \"executeNow\": true\n  }\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "f129fef1-189b-4954-bf93-99078af440fe",
+      "name": "Send to Docker Execution",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1640,
+        0
+      ],
+      "typeVersion": 4.1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://duckdb-server:1294/query",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": {{ $json.sql | json }}\n}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "c0272099-827e-4cea-98fa-179f2adff0ce",
+      "name": "Run SQL in DuckDB",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2398,
+        200
+      ],
+      "typeVersion": 4.1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://metabase-api:3000/api/dashboard",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Metabase-Session",
+              "value": "={{ $secret.METABASE_SESSION_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": {{ $json.dashboardConfig.name | json }},\n  \"description\": {{ $json.dashboardConfig.description | json }},\n  \"parameters\": [],\n  \"collection_id\": null\n}",
+        "options": {}
+      },
+      "id": "010825f4-1796-4b7b-a209-811cd9685395",
+      "name": "Create Metabase Dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2994,
+        300
+      ],
+      "typeVersion": 4.1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://scheduler:8080/schedule",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jobId\": \"{{ $now.format('YYYYMMDDHHmmss') }}\",\n  \"script\": {{ $json.cronScript | json }}\n}",
+        "options": {}
+      },
+      "id": "d244adf2-a4f1-4230-bc2a-66a3c5724158",
+      "name": "Schedule Cron Job",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3512,
+        500
+      ],
+      "typeVersion": 4.1
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Python Code:\n```python\n{{ $('Extract Python Code').item.json.code }}\n```\n\nSQL Queries:\n```sql\n{{ $('Extract SQL Queries').item.json.sql }}\n```\n\nDashboard Config:\n```json\n{{ JSON.stringify($('Extract Dashboard Config').item.json.dashboardConfig, null, 2) }}\n```\n\nCron Job:\n```bash\n{{ $('Extract Cron Script').item.json.cronScript }}\n```\n\nExecution Result:\n```json\n{{ JSON.stringify($json, null, 2) }}\n```",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Based on the user's request, I've created a full end-to-end data pipeline. Create a user-friendly response that explains:\n\n1. What the pipeline does and how it addresses the user's needs\n2. The key components of the Python code (data ingestion, transformation, loading)\n3. The SQL queries for analyzing the data\n4. The Metabase dashboard that visualizes the results\n5. How the scheduled job will keep the data updated\n\nInclude any limitations, assumptions made, and suggestions for future improvements. Make the response conversational but informative, highlighting the value of the solution."
+            }
+          ]
+        }
+      },
+      "id": "1bd1223a-34ee-475f-9f1d-35fb6d3b832e",
+      "name": "Generate Pipeline Response",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        1944,
+        0
+      ],
+      "typeVersion": 1.5
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the dashboard ID from the previous node\nconst dashboardId = $input.first().json.id;\nconst charts = $('Extract Dashboard Config').first().json.dashboardConfig.cards;\n\n// For each chart in the dashboard config, create a card\nconst items = [];\n\nfor (let i = 0; i < charts.length; i++) {\n  const chart = charts[i];\n  \n  // Create a query first\n  const queryPayload = {\n    url: 'http://metabase-api:3000/api/card',\n    method: 'POST',\n    headers: {\n      'X-Metabase-Session': $secret.METABASE_SESSION_TOKEN\n    },\n    body: {\n      name: chart.name,\n      display: chart.type,\n      visualization_settings: {\n        'graph.dimensions': chart.dimensions,\n        'graph.metrics': chart.metrics\n      },\n      dataset_query: {\n        type: 'native',\n        native: {\n          query: chart.query\n        },\n        database: 1 // Assuming DuckDB is database ID 1\n      },\n      description: chart.description\n    }\n  };\n  \n  items.push({ json: queryPayload });\n}\n\nreturn items;"
+      },
+      "id": "cddd69bb-8706-4898-abe6-3d40c6cbf585",
+      "name": "Add Dashboard Cards",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3292,
+        300
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Metabase-Session",
+              "value": "={{ $json.headers['X-Metabase-Session'] }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "id": "3e2cefce-7ba8-4004-9ef8-33d47ce2e549",
+      "name": "Create Dashboard Cards",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3512,
+        300
+      ],
+      "typeVersion": 4.1
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all the created cards\nconst cards = $input.all().map(item => item.json);\nconst dashboardId = $('Create Metabase Dashboard').first().json.id;\n\n// For each card, add it to the dashboard\nconst items = [];\n\nfor (let i = 0; i < cards.length; i++) {\n  const card = cards[i];\n  \n  // Position cards in a grid\n  const row = Math.floor(i / 2);\n  const col = i % 2;\n  \n  const dashboardCardPayload = {\n    url: `http://metabase-api:3000/api/dashboard/${dashboardId}/cards`,\n    method: 'POST',\n    headers: {\n      'X-Metabase-Session': $secret.METABASE_SESSION_TOKEN\n    },\n    body: {\n      cardId: card.id,\n      row: row * 4,\n      col: col * 6,\n      sizeX: 6,\n      sizeY: 4\n    }\n  };\n  \n  items.push({ json: dashboardCardPayload });\n}\n\nreturn items;"
+      },
+      "id": "8ab17892-af39-4776-a0b8-ac2416191d6e",
+      "name": "Add Cards to Dashboard",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3732,
+        300
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Metabase-Session",
+              "value": "={{ $json.headers['X-Metabase-Session'] }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "id": "53c92480-3547-4290-8179-ffb00fcf7e97",
+      "name": "Place Cards on Dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3952,
+        300
+      ],
+      "typeVersion": 4.1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "73de918d-e49d-42d9-ba9d-4db45adea2d9",
+              "name": "response",
+              "type": "string",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "id": "70c16774-a2b8-4e2b-a3c4-0f3ba7d693ee",
+              "name": "dashboardUrl",
+              "type": "string",
+              "value": "=http://metabase:3000/dashboard/{{ $('Create Metabase Dashboard').first().json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "17634417-e6ac-4ecc-a8df-f690c0e078a7",
+      "name": "Format Final Response",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2398,
+        0
+      ],
+      "typeVersion": 3.3
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"response\": {{ $json.response | json }},\n  \"dashboardUrl\": {{ $json.dashboardUrl | json }},\n  \"pipelineId\": \"{{ $('Send to Docker Execution').item.json.pipelineId }}\"\n}",
+        "options": {}
+      },
+      "id": "b5ae87e1-3766-469c-9f76-c490702d2e24",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        2696,
+        0
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -340,
+        560
+      ],
+      "id": "5c272787-a789-4b7f-a998-9577e8276804",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n    \"requestType\": \"PIPELINE_CREATION\",\n    \"dataSource\": \"CSV\",\n    \"transformationNeeded\": true,\n    \"visualizationNeeded\": true,\n    \"schedulingNeeded\": true,\n    \"complexity\": \"MEDIUM\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        340,
+        300
+      ],
+      "id": "d50879a3-47ec-4b78-a341-47492fd3cca7",
+      "name": "Structured Output Parser"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Analyze Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Request": {
+      "main": [
+        [
+          {
+            "node": "Determine Request Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine Request Type": {
+      "main": [
+        [
+          {
+            "node": "Route Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Request": {
+      "main": [
+        [
+          {
+            "node": "Handle Code Generation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Code Generation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Code Generation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Code Generation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Analyze Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Code Generation": {
+      "main": [
+        [
+          {
+            "node": "Extract Python Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Python Code": {
+      "main": [
+        [
+          {
+            "node": "Generate SQL",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send to Docker Execution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate SQL": {
+      "main": [
+        [
+          {
+            "node": "Extract SQL Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract SQL Queries": {
+      "main": [
+        [
+          {
+            "node": "Generate Dashboard Config",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Run SQL in DuckDB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Dashboard Config": {
+      "main": [
+        [
+          {
+            "node": "Extract Dashboard Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Dashboard Config": {
+      "main": [
+        [
+          {
+            "node": "Generate Cron Job",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create Metabase Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Cron Job": {
+      "main": [
+        [
+          {
+            "node": "Extract Cron Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Cron Script": {
+      "main": [
+        [
+          {
+            "node": "Schedule Cron Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Docker Execution": {
+      "main": [
+        [
+          {
+            "node": "Generate Pipeline Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Metabase Dashboard": {
+      "main": [
+        [
+          {
+            "node": "Add Dashboard Cards",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Dashboard Cards": {
+      "main": [
+        [
+          {
+            "node": "Create Dashboard Cards",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Dashboard Cards": {
+      "main": [
+        [
+          {
+            "node": "Add Cards to Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Cards to Dashboard": {
+      "main": [
+        [
+          {
+            "node": "Place Cards on Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Pipeline Response": {
+      "main": [
+        [
+          {
+            "node": "Format Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Final Response": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analyze Request",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Determine Request Type",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Handle Code Generation",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Generate SQL",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Generate Dashboard Config",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Generate Cron Job",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Generate Pipeline Response",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Analyze Request",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Determine Request Type",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fd48e4e0-55d2-4d3b-977d-320802d9ae36",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9cd4b56a8550f03129538b7ebc5456172e10a568573c8b63463f9ce7f70cad21"
+  },
+  "id": "zQDNZugZfrQ1JDFv",
+  "tags": []
+}

@@ -78,6 +78,7 @@ services:
       - N8N_LOG_LEVEL=info
       # Pass API keys to n8n
       - NEXT_PUBLIC_GEMINI_API_KEY=${NEXT_PUBLIC_GEMINI_API_KEY}
+      - N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
     volumes:
       - n8n_data:/home/node/.n8n
       # Add the volume mount for avatar definitions
