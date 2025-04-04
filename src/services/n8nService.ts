@@ -10,6 +10,7 @@ const DEFAULT_WORKFLOW_ENDPOINT = process.env.NEXT_PUBLIC_N8N_DEFAULT_WORKFLOW |
 const OPENAI_WORKFLOW_ENDPOINT = process.env.NEXT_PUBLIC_N8N_OPENAI_WORKFLOW || '/webhook/dataengineering-common';
 const OLLAMA_WORKFLOW_ENDPOINT = process.env.NEXT_PUBLIC_N8N_OLLAMA_WORKFLOW || '/webhook/dataengineering-common';
 const CLAUDE_WORKFLOW_ENDPOINT = process.env.NEXT_PUBLIC_N8N_CLAUDE_WORKFLOW || '/webhook/dataengineering-common';
+const GEMINI_WORKFLOW_ENDPOINT = process.env.NEXT_PUBLIC_N8N_GEMINI_WORKFLOW || '/webhook/dataengineering-common';
 
 // Define workflow endpoints mapping
 const WORKFLOW_ENDPOINTS: Record<string, string> = {
@@ -17,6 +18,7 @@ const WORKFLOW_ENDPOINTS: Record<string, string> = {
   'openai': OPENAI_WORKFLOW_ENDPOINT,
   'ollama': OLLAMA_WORKFLOW_ENDPOINT,
   'claude': CLAUDE_WORKFLOW_ENDPOINT,
+  'gemini': GEMINI_WORKFLOW_ENDPOINT,
   'demo': DEFAULT_WORKFLOW_ENDPOINT // Fallback for demo mode
 };
 
@@ -64,12 +66,12 @@ export const n8nService = {
     
     // Otherwise, try to use the real n8n service
     try {
-      // Get the modelType - should be one of: 'default', 'openai', 'ollama', 'claude', 'demo'
+      // Get the modelType - should be one of: 'default', 'openai', 'ollama', 'claude', 'gemini', 'demo'
       // First try to use n8nWorkflowType from apiSettings since it should have the correct type
       let modelType = apiSettings.n8nWorkflowType || "default";
       
       // Validate modelType to ensure it's one of the expected values
-      const validModelTypes = ['default', 'openai', 'ollama', 'claude', 'demo'];
+      const validModelTypes = ['default', 'openai', 'ollama', 'claude', 'gemini', 'demo'];
       if (!validModelTypes.includes(modelType)) {
         console.warn(`Invalid modelType "${modelType}", falling back to "default"`);
         modelType = "default";

@@ -112,7 +112,7 @@ export interface UserSettings {
   maxHistoryItems: number;
 }
 
-export type N8nWorkflowType = 'default' | 'openai' | 'ollama' | 'claude' | 'demo';
+export type N8nWorkflowType = 'default' | 'openai' | 'ollama' | 'claude' | 'gemini' | 'demo';
 
 // Then in your ApiSettings interface, update the n8nWorkflowType property to use this type:
 export interface ApiSettings {
@@ -234,6 +234,7 @@ export interface EnvVariables {
   NEXT_PUBLIC_ANTHROPIC_API_KEY: string;
   NEXT_PUBLIC_AZURE_OPENAI_API_KEY: string;
   NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT: string;
+  NEXT_PUBLIC_GEMINI_API_KEY: string;
 }
 
 // Data engineering specific types

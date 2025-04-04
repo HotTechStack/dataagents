@@ -87,7 +87,17 @@ export async function GET(
           };
         }
         break;
-        
+
+      case 'gemini':
+        // Check Gemini API key
+        if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
+          validationResult = {
+            success: true, // Still allow connection to n8n
+            message: `n8n connected, but gemini warning: Gemini API key not found in environment variables`
+          };
+        }
+        break;
+
       case 'demo':
         // No validation needed for demo
         validationResult = {

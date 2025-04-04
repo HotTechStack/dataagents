@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ConnectionStatusTooltip } from './ConnectionStatusTooltip';
 import { StoreState, ApiSettings } from '@/types';
 
-type BackendType = 'demo' | 'n8n-openai' | 'n8n-ollama' | 'n8n-claude' | 'n8n-default';
+type BackendType = 'demo' | 'n8n-openai' | 'n8n-ollama' | 'n8n-claude' | 'n8n-gemini' | 'n8n-default';
 
 interface ConnectionOption {
   id: BackendType;
@@ -67,6 +67,7 @@ export function ConnectionSelector({
     console.debug("NEXT_PUBLIC_OLLAMA_API_URL exists:", !!process.env.NEXT_PUBLIC_OLLAMA_API_URL);
     console.debug("NEXT_PUBLIC_OLLAMA_API_URL value:", process.env.NEXT_PUBLIC_OLLAMA_API_URL);
     console.debug("NEXT_PUBLIC_ANTHROPIC_API_KEY exists:", !!process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY);
+    console.debug("NEXT_PUBLIC_GEMINI_API_KEY exists:", !!process.env.NEXT_PUBLIC_GEMINI_API_KEY);
     console.debug("NEXT_PUBLIC_AGENT_API_URL:", process.env.NEXT_PUBLIC_AGENT_API_URL);
     console.debug("NEXT_PUBLIC_N8N_DEFAULT_WORKFLOW:", process.env.NEXT_PUBLIC_N8N_DEFAULT_WORKFLOW);
     console.debug("All NEXT_PUBLIC env variables:", Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')));
@@ -91,7 +92,21 @@ export function ConnectionSelector({
     console.debug("Claude Key check:", hasKey);
     return hasKey;
   };
-  
+
+  const hasGeminiKey = (): boolean => {
+    const hasKey = !!process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    console.debug("Gemini Key check:", hasKey);
+    if (!hasKey) {
+      console.error("NEXT_PUBLIC_GEMINI_API_KEY is missing or empty");
+    } else {
+      // Log a masked version of the key for debugging
+      const maskedKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY?.substring(0, 4) + '...' +
+        process.env.NEXT_PUBLIC_GEMINI_API_KEY?.substring(process.env.NEXT_PUBLIC_GEMINI_API_KEY.length - 4);
+      console.debug("Gemini Key (masked):", maskedKey);
+    }
+    return hasKey;
+  };
+
   // Define connection options
   const backendOptions: ConnectionOption[] = [
     { 
@@ -131,6 +146,14 @@ export function ConnectionSelector({
       description: 'Connect to Claude via n8n workflow',
       workflowType: 'claude',
       envCheck: hasClaudeKey
+    },
+    {
+      id: 'n8n-gemini',
+      name: 'n8n Gemini',
+      icon: <MessageSquare className="h-4 w-4" />,
+      description: 'Connect to Gemini via n8n workflow',
+      workflowType: 'gemini',
+      envCheck: hasGeminiKey
     }
   ];
   
@@ -172,6 +195,7 @@ export function ConnectionSelector({
         case 'openai': return 'n8n-openai';
         case 'ollama': return 'n8n-ollama';
         case 'claude': return 'n8n-claude';
+        case 'gemini': return 'n8n-gemini';
         default: return 'n8n-default';
       }
     }

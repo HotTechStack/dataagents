@@ -89,6 +89,13 @@ export const environmentConfig = {
     default: '',
     environmentVariable: true
   },
+  // Gemini
+  NEXT_PUBLIC_GEMINI_API_KEY: {
+    description: 'Gemini API Key',
+    required: true,
+    default: '',
+    environmentVariable: true
+  },
   
   // n8n
   NEXT_PUBLIC_AGENT_API_URL: {
@@ -141,13 +148,19 @@ export function checkRequiredEnvironmentVariables(backend: string): {
         missingVars.push('NEXT_PUBLIC_ANTHROPIC_API_KEY');
       }
       break;
-      
+
     case 'azure':
       if (!process.env.NEXT_PUBLIC_AZURE_OPENAI_API_KEY) {
         missingVars.push('NEXT_PUBLIC_AZURE_OPENAI_API_KEY');
       }
       if (!process.env.NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT) {
         missingVars.push('NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT');
+      }
+      break;
+      
+    case 'gemini':
+      if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
+        missingVars.push('NEXT_PUBLIC_GEMINI_API_KEY');
       }
       break;
       

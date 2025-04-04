@@ -49,8 +49,8 @@ docker-compose up -d
 1. Once the containers are running, go to n8n at http://localhost:5678
 2. Upload the workflow from the `agents/n8n/conversations` directory
 3. Configure your API keys:
-   - In Docker Compose: update OpenAI/Claude key
-   - In n8n workflow: click on OpenAI/Claude model block and add your key
+   - In Docker Compose: update OpenAI/Claude/Gemini key
+   - In n8n workflow: click on OpenAI/Claude/Gemini model block and add your key
    - See [n8n documentation](https://docs.n8n.io/integrations/builtin/credentials/openai/#using-api-key) for more details
 
 4. Visit http://localhost:3000 and start interacting with your agents!
