@@ -4,6 +4,7 @@ import { ApiSettings } from '@/types';
 type ConnectionResult = {
   success: boolean;
   message: string;
+  hasGemini2Flash?: boolean; // Optional property for Gemini validation
 };
 
 /**
@@ -75,7 +76,7 @@ export const connectionValidator = {
           'Accept': 'application/json',
         }
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         return { 
@@ -158,7 +159,62 @@ export const connectionValidator = {
       };
     }
   },
-  
+
+  /**
+   * Validate Gemini connection
+   */
+  async validateGemini(): Promise<ConnectionResult> {
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
+    console.log('Validating Gemini API key in connectionValidator service');
+    console.log('Gemini API key exists:', !!apiKey);
+
+    if (!apiKey || apiKey.trim() === '') {
+      console.error('Gemini API key not found in environment variables');
+      return {
+        success: false,
+        message: 'Gemini API key not found in environment variables'
+      };
+    }
+
+    try {
+      console.log('Calling Gemini validation API endpoint');
+      // Use a proxy API route for Gemini validation
+      const response = await fetch('/api/gemini/validate', {
+        method: 'GET'
+      });
+
+      console.log(`Gemini validation API response status: ${response.status}`);
+
+      if (!response.ok) {
+        const error = await response.json().catch(e => {
+          console.error('Error parsing Gemini validation error response:', e);
+          return { message: 'Unknown error' };
+        });
+        console.error('Gemini validation API error:', error);
+        return {
+          success: false,
+          message: `Gemini API key is invalid: ${error.message || response.statusText}`
+        };
+      }
+
+      const result = await response.json();
+      console.log('Gemini validation API success response:', result);
+
+      return {
+        success: true,
+        message: result.message || 'Gemini API key is valid',
+        hasGemini2Flash: result.hasGemini2Flash
+      };
+    } catch (error) {
+      console.error('Gemini validation error:', error);
+      return {
+        success: false,
+        message: `Gemini validation error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  },
+
   /**
    * Validate n8n workflow with specific model type
    */
@@ -248,6 +304,8 @@ export const connectionValidator = {
         return this.validateOllama();
       case 'claude':
         return this.validateClaude();
+      case 'gemini':
+        return this.validateGemini();
       default:
         return { success: false, message: `Unknown backend type: ${backendType}` };
     }

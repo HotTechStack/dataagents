@@ -8,6 +8,7 @@ const DEFAULT_WORKFLOW_ENDPOINT = process.env.NEXT_PUBLIC_N8N_DEFAULT_WORKFLOW |
 const OPENAI_WORKFLOW_ENDPOINT = process.env.NEXT_PUBLIC_N8N_OPENAI_WORKFLOW || '/webhook/dataengineering-common';
 const OLLAMA_WORKFLOW_ENDPOINT = process.env.NEXT_PUBLIC_N8N_OLLAMA_WORKFLOW || '/webhook/dataengineering-common';
 const CLAUDE_WORKFLOW_ENDPOINT = process.env.NEXT_PUBLIC_N8N_CLAUDE_WORKFLOW || '/webhook/dataengineering-common';
+const GEMINI_WORKFLOW_ENDPOINT = process.env.NEXT_PUBLIC_N8N_GEMINI_WORKFLOW || '/webhook/dataengineering-common';
 
 // Define workflow endpoints mapping
 const WORKFLOW_ENDPOINTS: Record<string, string> = {
@@ -15,6 +16,7 @@ const WORKFLOW_ENDPOINTS: Record<string, string> = {
   'openai': OPENAI_WORKFLOW_ENDPOINT,
   'ollama': OLLAMA_WORKFLOW_ENDPOINT,
   'claude': CLAUDE_WORKFLOW_ENDPOINT,
+  'gemini': GEMINI_WORKFLOW_ENDPOINT,
   'demo': DEFAULT_WORKFLOW_ENDPOINT // Fallback for demo mode
 };
 
@@ -86,6 +88,9 @@ export async function GET(
             break;
           case 'claude':
             modelCheckResult = await checkClaudeAvailability();
+            break;
+          case 'gemini':
+            modelCheckResult = await checkGeminiAvailability();
             break;
         }
         console.log(`Model check result for ${workflowType}:`, modelCheckResult);
@@ -257,6 +262,58 @@ async function checkClaudeAvailability() {
     return {
       available: false,
       message: `Error validating Claude/Anthropic API key: ${error instanceof Error ? error.message : 'Unknown error'}`
+    };
+  }
+}
+
+/**
+ * Helper function to check Gemini API availability
+ */
+async function checkGeminiAvailability() {
+  const geminiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
+  if (!geminiKey || geminiKey.trim() === '') {
+    return {
+      available: false,
+      message: 'Gemini API key not found in environment variables'
+    };
+  }
+
+  try {
+    console.log('Checking Gemini API key validity');
+    // Check if Gemini API key is valid by making a simple request to the models endpoint
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${geminiKey}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log(`Gemini API response status: ${response.status}`);
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log('Gemini models available:', data.models?.length || 0);
+      return {
+        available: true,
+        message: 'Gemini API key is valid'
+      };
+    } else {
+      const error = await response.json().catch(e => {
+        console.error('Error parsing Gemini API response:', e);
+        return { error: { message: 'Unknown error parsing response' } };
+      });
+      console.error('Gemini API error:', error);
+      return {
+        available: false,
+        message: `Gemini API key is invalid: ${error.error?.message || response.statusText}`
+      };
+    }
+  } catch (error) {
+    console.error('Exception in checkGeminiAvailability:', error);
+    return {
+      available: false,
+      message: `Error validating Gemini API key: ${error instanceof Error ? error.message : 'Unknown error'}`
     };
   }
 }

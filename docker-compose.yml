@@ -17,11 +17,13 @@ services:
         NEXT_PUBLIC_N8N_OPENAI_WORKFLOW: "/webhook/dataengineering-common"
         NEXT_PUBLIC_N8N_OLLAMA_WORKFLOW: "/webhook/dataengineering-common"
         NEXT_PUBLIC_N8N_CLAUDE_WORKFLOW: "/webhook/dataengineering-common"
+        NEXT_PUBLIC_N8N_GEMINI_WORKFLOW: "/webhook/dataengineering-common"
 
         # IMPORTANT: Use your own key, you can use the .env file to set this
         # CRITICAL: You can run it without keys by using Ollama
         NEXT_PUBLIC_OPENAI_API_KEY: ${NEXT_PUBLIC_OPENAI_API_KEY}
         NEXT_PUBLIC_ANTHROPIC_API_KEY: ${NEXT_PUBLIC_ANTHROPIC_API_KEY}
+        NEXT_PUBLIC_GEMINI_API_KEY: ${NEXT_PUBLIC_GEMINI_API_KEY}
         # CRITICAL FIX: Use container name instead of localhost
         NEXT_PUBLIC_OLLAMA_API_URL: "http://ollama:11434"
     ports:
@@ -39,9 +41,11 @@ services:
       NEXT_PUBLIC_N8N_DEFAULT_WORKFLOW: "/webhook/dataengineering-common"
       NEXT_PUBLIC_N8N_OPENAI_WORKFLOW: "/webhook/dataengineering-common"
       NEXT_PUBLIC_N8N_OLLAMA_WORKFLOW: "/webhook/dataengineering-common"
-      NEXT_PUBLIC_N8N_CLAUDE_WORKFLOW: "webhook/dataengineering-common"
+      NEXT_PUBLIC_N8N_CLAUDE_WORKFLOW: "/webhook/dataengineering-common"
+      NEXT_PUBLIC_N8N_GEMINI_WORKFLOW: "/webhook/dataengineering-common"
       NEXT_PUBLIC_OPENAI_API_KEY: ${NEXT_PUBLIC_OPENAI_API_KEY}
       NEXT_PUBLIC_ANTHROPIC_API_KEY: ${NEXT_PUBLIC_ANTHROPIC_API_KEY}
+      NEXT_PUBLIC_GEMINI_API_KEY: ${NEXT_PUBLIC_GEMINI_API_KEY}
       # CRITICAL FIX: Use container name instead of localhost
       NEXT_PUBLIC_OLLAMA_API_URL: "http://ollama:11434"
 
@@ -55,7 +59,7 @@ services:
     networks:
       - data-engineering-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/healthz"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/healthz" ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -72,6 +76,8 @@ services:
       - N8N_PROTOCOL=http
       - NODE_ENV=production
       - N8N_LOG_LEVEL=info
+      # Pass API keys to n8n
+      - NEXT_PUBLIC_GEMINI_API_KEY=${NEXT_PUBLIC_GEMINI_API_KEY}
     volumes:
       - n8n_data:/home/node/.n8n
       # Add the volume mount for avatar definitions
@@ -81,7 +87,7 @@ services:
       - data-engineering-network
     healthcheck:
       # "localhost" inside the n8n container is fine for the n8n process itself
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5678/healthz"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5678/healthz" ]
       interval: 30s
       timeout: 5s
       retries: 3

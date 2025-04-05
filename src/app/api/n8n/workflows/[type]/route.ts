@@ -8,6 +8,7 @@ const DEFAULT_WORKFLOW_ENDPOINT = process.env.NEXT_PUBLIC_N8N_DEFAULT_WORKFLOW |
 const OPENAI_WORKFLOW_ENDPOINT = process.env.NEXT_PUBLIC_N8N_OPENAI_WORKFLOW || '/webhook/dataengineering-common';
 const OLLAMA_WORKFLOW_ENDPOINT = process.env.NEXT_PUBLIC_N8N_OLLAMA_WORKFLOW || '/webhook/dataengineering-common';
 const CLAUDE_WORKFLOW_ENDPOINT = process.env.NEXT_PUBLIC_N8N_CLAUDE_WORKFLOW || '/webhook/dataengineering-common';
+const GEMINI_WORKFLOW_ENDPOINT = process.env.NEXT_PUBLIC_N8N_GEMINI_WORKFLOW || '/webhook/dataengineering-common';
 
 // Define workflow endpoints mapping
 const WORKFLOW_ENDPOINTS: Record<string, string> = {
@@ -15,6 +16,7 @@ const WORKFLOW_ENDPOINTS: Record<string, string> = {
   'openai': OPENAI_WORKFLOW_ENDPOINT,
   'ollama': OLLAMA_WORKFLOW_ENDPOINT,
   'claude': CLAUDE_WORKFLOW_ENDPOINT,
+  'gemini': GEMINI_WORKFLOW_ENDPOINT,
   'demo': DEFAULT_WORKFLOW_ENDPOINT // Fallback for demo mode
 };
 
