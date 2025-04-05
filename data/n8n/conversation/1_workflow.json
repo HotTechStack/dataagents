@@ -563,7 +563,7 @@
         "messages": {
           "messageValues": [
             {
-              "message": "=To maintain context and fully understand the user's question, always review the previous conversation between you and him before providing an answer.\nThis is the previous conversation: {{ $('Aggregate').item.json[\"context\"].map(m => ` Human: ${m.human || 'undefined'} AI Assistant: ${m.ai || 'undefined'} `).join('') }}"
+              "message": "=To maintain context and fully understand the user's question, always review the previous conversation between you and him before providing an answer. Always ensure generating output without s JSON Parsing ERROR. Take into account the schema of the parser.\nThis is the previous conversation: {{ $('Aggregate').item.json[\"context\"].map(m => ` Human: ${m.human || 'undefined'} AI Assistant: ${m.ai || 'undefined'} `).join('') }}"
             }
           ]
         }
@@ -580,7 +580,7 @@
     },
     {
       "parameters": {
-        "jsonSchemaExample": "{\n  \"output\": {\n    \"summary\": \"\",\n    \"agents\": [\n      {\n        \"agentId\": \"\",\n        \"agentName\": \"\",\n        \"content\": \"\"\n      }\n    ]\n  }\n}"
+        "jsonSchemaExample": "{\n  \"summary\": \"\",\n  \"agents\": [\n    {\n      \"agentId\": \"\",\n      \"agentName\": \"\",\n      \"content\": \"\"\n    }\n  ]\n}\n"
       },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.2,
@@ -1006,7 +1006,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "1765ca7f-d751-41bf-91b2-3e9d0d8bdb5f",
+  "versionId": "6227f362-32d6-4c8c-b59c-a106ff25982d",
   "meta": {
     "instanceId": "692531ee2a13fa33af74f7a5ea5609474d5a0f7c8c56e5778101f322976ad391"
   },
