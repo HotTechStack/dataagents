@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # Execution container for running Python-based pipeline agents
+  execution-container:
+    build:
+      context: ./pipelineagent
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./pipeline-data:/data
+    environment:
+      - LOG_LEVEL=INFO
+    networks:
+      - data-eng-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # DuckDB Server (for querying via HTTP)
+  duckdb-server:
+    image: ghcr.io/duckdb/duckdb:latest
+    ports:
+      - "1294:1294"
+    volumes:
+      - ./duckdb-data:/data
+    command: ["--http", "--listen", "0.0.0.0", "--port", "1294", "--data", "/data"]
+    networks:
+      - data-eng-network
+
+  # Metabase for dashboards
+  metabase:
+    image: metabase/metabase:latest
+    ports:
+      - "3030:3000"  # Avoid port conflict with existing stack
+    environment:
+      - MB_DB_TYPE=postgres
+      - MB_DB_DBNAME=metabase
+      - MB_DB_PORT=5432
+      - MB_DB_USER=metabase
+      - MB_DB_PASS=metabasepassword
+      - MB_DB_HOST=postgres
+      - JAVA_TIMEZONE=UTC
+    depends_on:
+      - postgres
+    networks:
+      - data-eng-network
+
+  # Postgres for Metabase & data storage
+  postgres:
+    image: postgres:14-alpine
+    ports:
+      - "5433:5432"  # Avoid port conflict with existing stack
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgrespassword
+      - POSTGRES_DB=postgres
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - data-eng-network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional cron-based scheduler
+  scheduler:
+    build:
+      context: ./scheduler
+      dockerfile: Dockerfile
+    volumes:
+      - ./cron-jobs:/etc/cron.d
+      - ./pipeline-data:/data
+    environment:
+      - TZ=UTC
+    networks:
+      - data-eng-network
+
+volumes:
+  pipeline-data:
+  duckdb-data:
+  postgres-data:
+
+networks:
+  data-eng-network:
+    driver: bridge
