@@ -410,6 +410,217 @@
       ],
       "typeVersion": 4.1
     },
+
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "execution-check-condition",
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.exitCode || ($json.error ? 1 : 0) }}",
+              "rightValue": 0
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "execution-result-checker",
+      "name": "Execution Successful?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -300,
+        100
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "retry-counter-assignment",
+              "name": "retryCount",
+              "type": "number",
+              "value": "={{ $json.retryCount ? $json.retryCount + 1 : 1 }}"
+            },
+            {
+              "id": "original-request-assignment",
+              "name": "originalRequest",
+              "type": "string",
+              "value": "={{ $json.originalRequest || $('Determine Request Type').item.json.output.originalQuery }}"
+            },
+            {
+              "id": "error-output-assignment",
+              "name": "errorOutput",
+              "type": "string",
+              "value": "={{ $json.stderr || $json.error || 'Unknown error occurred during execution' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "retry-counter",
+      "name": "Increment Retry Counter",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -300,
+        200
+      ],
+      "typeVersion": 3.3
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "max-retries-condition",
+              "operator": {
+                "type": "number",
+                "operation": "smaller"
+              },
+              "leftValue": "={{ $json.retryCount }}",
+              "rightValue": 3
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "max-retries-check",
+      "name": "Max Retries Reached?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -300,
+        300
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Original code:\n```python\n{{ $('Extract Python Code').item.json.code }}\n```\n\nError output:\n```\n{{ $json.errorOutput }}\n```\n\nOriginal request: {{ $json.originalRequest }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a data engineering expert debugging Python code execution errors. Given the failed code execution in a Docker environment, analyze the error output and suggest fixes.\n\nProvide a concise explanation of what went wrong, and how to fix it. Return your response in JSON format:\n{\n  \"errorType\": \"SYNTAX_ERROR|RUNTIME_ERROR|DEPENDENCY_ERROR|PERMISSION_ERROR|DATA_ERROR|OTHER\",\n  \"explanation\": \"Clear explanation of the issue\",\n  \"suggestedFixes\": [\"Specific change 1\", \"Specific change 2\"],\n  \"codeToModify\": \"Specific code snippet to change\"\n}"
+            }
+          ]
+        }
+      },
+      "id": "error-analysis",
+      "name": "Analyze Execution Error",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        -150,
+        300
+      ],
+      "typeVersion": 1.5
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"errorType\": \"RUNTIME_ERROR\",\n  \"explanation\": \"The code is trying to access a file that doesn't exist\",\n  \"suggestedFixes\": [\"Check if the file exists before attempting to open it\", \"Add error handling for file not found exceptions\"],\n  \"codeToModify\": \"with open('data.csv', 'r') as f:\"\n}"
+      },
+      "id": "error-analysis-parser",
+      "name": "Parse Error Analysis",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        0,
+        300
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Original request: {{ $json.originalRequest }}\n\nPrevious code attempt:\n```python\n{{ $('Extract Python Code').item.json.code }}\n```\n\nError analysis:\n{{ JSON.stringify($json.output, null, 2) }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a data engineering expert tasked with fixing Python code that failed during execution. Generate an improved version of the code based on the error analysis.\n\nThe code should implement a data pipeline using Polars/Pandas and DuckDB with these components:\n1. Data ingestion from the source specified in the original request\n2. Data transformation using Polars/Pandas\n3. Storage of processed data in DuckDB\n4. Setup for visualization in Metabase\n\nFocus on fixing the specific issues identified in the error analysis, while maintaining the overall structure and purpose of the code.\n\nThe code should be well-structured, properly commented, include robust error handling, and follow best practices. Return only the fixed Python code wrapped in ```python and ``` markers."
+            }
+          ]
+        }
+      },
+      "id": "code-regeneration",
+      "name": "Regenerate Code with Error Context",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        150,
+        300
+      ],
+      "typeVersion": 1.5
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Original request: {{ $json.originalRequest }}\n\nError details:\n{{ JSON.stringify($json.output, null, 2) }}\n\nCode that failed after {{ $json.retryCount }} attempts:\n```python\n{{ $('Extract Python Code').item.json.code }}\n```",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a helpful data engineering assistant. Unfortunately, after multiple attempts, we couldn't successfully generate a working data pipeline for the user's request.\n\nCreate a helpful error message that explains:\n1. What went wrong (based on the error analysis)\n2. Why we couldn't automatically fix it\n3. What the user might try instead\n4. Specific suggestions for how they could modify their request to be more successful\n\nKeep your response conversational, empathetic, and constructive."
+            }
+          ]
+        }
+      },
+      "id": "error-response-generator",
+      "name": "Generate Error Response",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        0,
+        400
+      ],
+      "typeVersion": 1.5
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "error-response-assignment",
+              "name": "response",
+              "type": "string",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "id": "error-status-assignment",
+              "name": "status",
+              "type": "string",
+              "value": "error"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-error-response",
+      "name": "Format Error Response",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        150,
+        400
+      ],
+      "typeVersion": 3.3
+    },
+
+
+
     {
       "parameters": {
         "method": "POST",
