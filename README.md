@@ -41,7 +41,7 @@ git clone https://github.com/HotTechStack/dataagents.git
 cd dataagents
 
 # Start the application
-docker-compose up -d
+make up
 ```
 
 ### 🔧 Setup Steps
