@@ -57,3 +57,8 @@ local
 
 .history
 .history/*
+
+dockers/pipelineagent/pipeline-data/*
+dockers/pipelineagent/postgres-data/*
+dockers/pipelineagent/postgres-data/
+dockers/pipelineagent/pipeline-data/

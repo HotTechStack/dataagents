@@ -20,16 +20,15 @@ RUN pip install uv==0.6.11
 # Copy requirements file
 COPY requirements.txt .
 
-
 # Install Python dependencies
 RUN uv pip install --no-cache-dir -r requirements.txt --system
 
 # Copy execution service and utilities
 COPY execution_service.py .
-COPY utils/ ./utils/
+# COPY utils/ ./utils/
 
 # Create necessary directories
-RUN mkdir -p /data/pipelines /data/results /var/log /data/cron
+RUN mkdir -p /data/pipelines /data/results /var/log /data/cron /data/duckdb
 
 # Set permissions
 RUN chmod -R 755 /app /data

@@ -131,4 +131,5 @@ volumes:
 
 networks:
   data-engineering-network:
-    driver: bridge
+    external:
+      name: data-engineering-shared-network
