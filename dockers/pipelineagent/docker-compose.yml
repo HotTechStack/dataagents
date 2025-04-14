@@ -4,17 +4,12 @@ services:
   # Execution container for running Python-based pipeline agents
   execution-container:
     build:
-<<<<<<< HEAD
       context: .
-=======
-      context: ./pipelineagent
->>>>>>> ca5f6b1f0adb561648f32da497b1f309a7ea3be7
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
       - ./pipeline-data:/data
-<<<<<<< HEAD
       - ./duckdb-data:/data/duckdb  # Shared volume for DuckDB files
     environment:
       - LOG_LEVEL=INFO
@@ -22,32 +17,12 @@ services:
     networks:
       - data-eng-network
       - data-engineering-shared-network  # Add this shared network
-=======
-    environment:
-      - LOG_LEVEL=INFO
-    networks:
-      - data-eng-network
->>>>>>> ca5f6b1f0adb561648f32da497b1f309a7ea3be7
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-<<<<<<< HEAD
-=======
-  # DuckDB Server (for querying via HTTP)
-  duckdb-server:
-    image: ghcr.io/duckdb/duckdb:latest
-    ports:
-      - "1294:1294"
-    volumes:
-      - ./duckdb-data:/data
-    command: ["--http", "--listen", "0.0.0.0", "--port", "1294", "--data", "/data"]
-    networks:
-      - data-eng-network
-
->>>>>>> ca5f6b1f0adb561648f32da497b1f309a7ea3be7
   # Metabase for dashboards
   metabase:
     image: metabase/metabase:latest
@@ -55,28 +30,17 @@ services:
       - "3030:3000"  # Avoid port conflict with existing stack
     environment:
       - MB_DB_TYPE=postgres
-<<<<<<< HEAD
       - MB_DB_DBNAME=metabasetest
       - MB_DB_PORT=5432
       - MB_DB_USER=postgres
       - MB_DB_PASS=postgrespassword
-=======
-      - MB_DB_DBNAME=metabase
-      - MB_DB_PORT=5432
-      - MB_DB_USER=metabase
-      - MB_DB_PASS=metabasepassword
->>>>>>> ca5f6b1f0adb561648f32da497b1f309a7ea3be7
       - MB_DB_HOST=postgres
       - JAVA_TIMEZONE=UTC
     depends_on:
       - postgres
     networks:
       - data-eng-network
-<<<<<<< HEAD
     
-=======
-
->>>>>>> ca5f6b1f0adb561648f32da497b1f309a7ea3be7
   # Postgres for Metabase & data storage
   postgres:
     image: postgres:14-alpine
@@ -98,7 +62,6 @@ services:
       retries: 5
 
   # Optional cron-based scheduler
-<<<<<<< HEAD
   # scheduler:
   #   build:
   #     context: ./scheduler
@@ -116,30 +79,10 @@ services:
 volumes:
   pipeline-data:
   duckdb-data:  # Shared volume for DuckDB files
-=======
-  scheduler:
-    build:
-      context: ./scheduler
-      dockerfile: Dockerfile
-    volumes:
-      - ./cron-jobs:/etc/cron.d
-      - ./pipeline-data:/data
-    environment:
-      - TZ=UTC
-    networks:
-      - data-eng-network
-
-volumes:
-  pipeline-data:
-  duckdb-data:
->>>>>>> ca5f6b1f0adb561648f32da497b1f309a7ea3be7
   postgres-data:
 
 networks:
   data-eng-network:
     driver: bridge
-<<<<<<< HEAD
   data-engineering-shared-network:
     external: true
-=======
->>>>>>> ca5f6b1f0adb561648f32da497b1f309a7ea3be7
